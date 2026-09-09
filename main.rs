@@ -1,7 +1,7 @@
 use std::io::{self, BufRead};
 use std::convert::TryInto;
 
-fn sha256(data: &[u8]) -> String {
+fn sha256_bytes(data: &[u8]) -> [u8; 32] {
     let k: [u32; 64] = [
         0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
         0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
@@ -44,105 +44,45 @@ fn sha256(data: &[u8]) -> String {
         h[4]=h[4].wrapping_add(e); h[5]=h[5].wrapping_add(f);
         h[6]=h[6].wrapping_add(g); h[7]=h[7].wrapping_add(hh);
     }
-    h.iter().map(|v| format!("{:08x}", v)).collect()
+    let mut out = [0u8; 32];
+    for i in 0..8 {
+        out[i*4..i*4+4].copy_from_slice(&h[i].to_be_bytes());
+    }
+    out
 }
 
-struct Block {
-    hash: String,
-    prev_hash: String,
-    merkle_root: String,
-    data: String,
-    nonce: u64,
-}
-
-fn merkle(txs: &[String]) -> String {
-    if txs.is_empty() {
-        return "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855".to_string();
-    }
-    let mut nodes: Vec<String> = txs.iter().map(|tx| sha256(tx.as_bytes())).collect();
-    while nodes.len() > 1 {
-        if nodes.len() % 2 == 1 {
-            nodes.push(nodes.last().unwrap().clone());
-        }
-        let mut next = Vec::new();
-        for i in (0..nodes.len()).step_by(2) {
-            next.push(sha256(format!("{}{}", nodes[i], nodes[i+1]).as_bytes()));
-        }
-        nodes = next;
-    }
-    nodes[0].clone()
-}
-
-fn mine(prev_hash: &str, merkle_root: &str, data: &str) -> (String, u64) {
-    let mut nonce = 0;
-    loop {
-        let h = sha256(format!("{}|{}|{}|{}", prev_hash, merkle_root, data, nonce).as_bytes());
-        if h.starts_with("00") {
-            return (h, nonce);
-        }
-        nonce += 1;
-    }
+fn hex_to_bytes(s: &str) -> Vec<u8> {
+    (0..s.len()).step_by(2).map(|i| u8::from_str_radix(&s[i..i+2], 16).unwrap()).collect()
 }
 
 fn main() {
-    let genesis_prev = "0".repeat(64);
-    let genesis_root = merkle(&[]);
-    let genesis_data = "genesis";
-    let genesis_nonce = 0;
-    let genesis_hash = sha256(format!("{}|{}|{}|{}", genesis_prev, genesis_root, genesis_data, genesis_nonce).as_bytes());
-    
-    let mut chain = vec![Block {
-        hash: genesis_hash,
-        prev_hash: genesis_prev,
-        merkle_root: genesis_root,
-        data: genesis_data.to_string(),
-        nonce: genesis_nonce,
-    }];
-    
-    let mut mempool = Vec::new();
-    
     let stdin = io::stdin();
     for line in stdin.lock().lines() {
         let l = line.unwrap();
         if l.is_empty() { continue; }
-        let mut parts = l.splitn(2, ' ');
-        let cmd = parts.next().unwrap();
-        
-        match cmd {
-            "TX" => mempool.push(parts.next().unwrap().to_string()),
-            "MINE" => {
-                let data = parts.next().unwrap();
-                let root = merkle(&[]);
-                let prev = &chain.last().unwrap().hash;
-                let (h, nonce) = mine(prev, &root, data);
-                chain.push(Block { hash: h.clone(), prev_hash: prev.clone(), merkle_root: root, data: data.to_string(), nonce });
-                println!("height={} hash={} nonce={}", chain.len() - 1, h, nonce);
-            }
-            "MINE_TX" => {
-                let data = mempool.join(",");
-                let root = merkle(&mempool);
-                mempool.clear();
-                let prev = &chain.last().unwrap().hash;
-                let (h, nonce) = mine(prev, &root, &data);
-                chain.push(Block { hash: h.clone(), prev_hash: prev.clone(), merkle_root: root, data, nonce });
-                println!("height={} hash={} nonce={}", chain.len() - 1, h, nonce);
-            }
-            "VALIDATE" => {
-                let mut valid = true;
-                for (i, b) in chain.iter().enumerate() {
-                    let expected_prev = if i == 0 { "0".repeat(64) } else { chain[i-1].hash.clone() };
-                    let recomputed = sha256(format!("{}|{}|{}|{}", b.prev_hash, b.merkle_root, b.data, b.nonce).as_bytes());
-                    if b.prev_hash != expected_prev || b.hash != recomputed {
-                        println!("INVALID @ {}", i);
-                        valid = false;
-                        break;
-                    }
-                }
-                if valid {
-                    println!("VALID");
-                }
-            }
-            _ => {}
+        let mut it = l.splitn(6, '|');
+        let version: u32 = it.next().unwrap().parse().unwrap();
+        let mut prev = hex_to_bytes(it.next().unwrap());
+        prev.reverse();
+        let mut merkle = hex_to_bytes(it.next().unwrap());
+        merkle.reverse();
+        let ts: u32 = it.next().unwrap().parse().unwrap();
+        let bits: u32 = it.next().unwrap().parse().unwrap();
+        let nonce: u32 = it.next().unwrap().parse().unwrap();
+
+        let mut header = Vec::with_capacity(80);
+        header.extend_from_slice(&version.to_le_bytes());
+        header.extend_from_slice(&prev);
+        header.extend_from_slice(&merkle);
+        header.extend_from_slice(&ts.to_le_bytes());
+        header.extend_from_slice(&bits.to_le_bytes());
+        header.extend_from_slice(&nonce.to_le_bytes());
+
+        let mut digest = sha256_bytes(&sha256_bytes(&header));
+        digest.reverse();
+        for b in digest {
+            print!("{:02x}", b);
         }
+        println!();
     }
 }
