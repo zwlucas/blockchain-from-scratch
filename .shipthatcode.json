@@ -1,0 +1,78 @@
+{
+  "course": "build-blockchain",
+  "language": "rust",
+  "language_id": 73,
+  "entrypoint": "main.rs",
+  "version": 1,
+  "content_hash": "fbc4d973d211d208",
+  "lessons": [
+    {
+      "slug": "block-structure",
+      "tests_hash": "3031e7b559bf"
+    },
+    {
+      "slug": "chain-validation",
+      "tests_hash": "96a17404628f"
+    },
+    {
+      "slug": "merkle-tree",
+      "tests_hash": "cc2a25fb3b41"
+    },
+    {
+      "slug": "merkle-proof",
+      "tests_hash": "f08e31e2f450"
+    },
+    {
+      "slug": "pow",
+      "tests_hash": "504828fddc91"
+    },
+    {
+      "slug": "difficulty",
+      "tests_hash": "273962c6cf26"
+    },
+    {
+      "slug": "transactions",
+      "tests_hash": "e5d331ae3b13"
+    },
+    {
+      "slug": "double-spend",
+      "tests_hash": "d0e7aa683808"
+    },
+    {
+      "slug": "consensus",
+      "tests_hash": "79755d0531d5"
+    },
+    {
+      "slug": "full-blockchain",
+      "tests_hash": "03be21ca7420"
+    },
+    {
+      "slug": "bitcoin-block-header",
+      "tests_hash": "4202c9d84ee1"
+    },
+    {
+      "slug": "ecdsa-on-secp256k1",
+      "tests_hash": "4702bf0ce956"
+    },
+    {
+      "slug": "bip32-hd-wallets",
+      "tests_hash": "5244b74db8ab"
+    },
+    {
+      "slug": "bitcoin-script",
+      "tests_hash": "39eb4ed233d6"
+    },
+    {
+      "slug": "mempool-fee-selection",
+      "tests_hash": "70c77c0584ac"
+    },
+    {
+      "slug": "fork-resolution-heaviest-chain",
+      "tests_hash": "4a37fe216b9e"
+    },
+    {
+      "slug": "p2p-gossip-propagation",
+      "tests_hash": "880057a6a420"
+    }
+  ]
+}
