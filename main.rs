@@ -49,37 +49,20 @@ fn sha256(data: &[u8]) -> String {
     h.iter().map(|v| format!("{:08x}", v)).collect()
 }
 
+fn merkle_root(txs: &[&str]) -> String {
+    if txs.is_empty() { return sha256(b""); }
+    let mut level: Vec<String> = txs.iter().map(|t| sha256(t.as_bytes())).collect();
+    while level.len() > 1 {
+        if level.len() % 2 == 1 { let last = level.last().unwrap().clone(); level.push(last); }
+        level = level.chunks(2).map(|p| sha256((p[0].clone() + &p[1]).as_bytes())).collect();
+    }
+    level.remove(0)
+}
+
 fn main() {
     let mut input = String::new();
     io::stdin().read_to_string(&mut input).unwrap();
-
-    let blocks: Vec<(&str, &str, &str, &str)> = input.lines()
-        .filter(|l| !l.is_empty())
-        .map(|l| {
-            let mut it = l.splitn(4, ' ');
-            let idx  = it.next().unwrap();
-            let prev = it.next().unwrap();
-            let data = it.next().unwrap();
-            let hash = it.next().unwrap();
-            (idx, prev, data, hash)
-        })
-        .collect();
-
-    const ZEROS: &str = "0000000000000000000000000000000000000000000000000000000000000000";
-    let mut prev_hash = ZEROS;
-
-    for (i, &(idx, prev, data, stored)) in blocks.iter().enumerate() {
-        let preimage = format!("{}|{}|{}", idx, prev, data);
-        if sha256(preimage.as_bytes()) != stored {
-            println!("INVALID block {}", i);
-            return;
-        }
-        
-        if prev != prev_hash {
-            println!("INVALID block {}", i);
-            return;
-        }
-        prev_hash = stored;
-    }
-    println!("VALID");
+    let line = input.trim();
+    let txs: Vec<&str> = if line.is_empty() { vec![] } else { line.split(',').collect() };
+    println!("{}", merkle_root(&txs));
 }
