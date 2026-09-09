@@ -54,7 +54,9 @@ fn main() {
     for line in stdin.lock().lines() {
         let l = line.unwrap();
         if l.is_empty() { continue; }
-        let (data, diff_str) = l.split_once('|').unwrap();
+        let mut it = l.splitn(2, '|');
+        let data = it.next().unwrap();
+        let diff_str = it.next().unwrap();
         let diff: usize = diff_str.parse().unwrap();
         let prefix = "0".repeat(diff);
         let mut nonce: u64 = 0;
