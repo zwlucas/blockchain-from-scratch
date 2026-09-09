@@ -54,16 +54,17 @@ fn main() {
     for line in stdin.lock().lines() {
         let l = line.unwrap();
         if l.is_empty() { continue; }
-        let mut parts = l.splitn(3, '|');
-        let tx   = parts.next().unwrap();
-        let root = parts.next().unwrap();
-        let sibs = parts.next().unwrap();
-
-        let mut h = sha256(tx.as_bytes());
-        for sib in sibs.split(',') {
-            let (a, b) = if h.as_str() < sib { (h.as_str(), sib) } else { (sib, h.as_str()) };
-            h = sha256(format!("{}{}", a, b).as_bytes());
+        let (data, diff_str) = l.split_once('|').unwrap();
+        let diff: usize = diff_str.parse().unwrap();
+        let prefix = "0".repeat(diff);
+        let mut nonce: u64 = 0;
+        loop {
+            let h = sha256(format!("{}:{}", data, nonce).as_bytes());
+            if h.starts_with(&prefix) {
+                println!("{}", nonce);
+                break;
+            }
+            nonce += 1;
         }
-        println!("{}", if h == root { "VALID" } else { "INVALID" });
     }
 }
