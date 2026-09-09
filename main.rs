@@ -1,4 +1,4 @@
-use std::io::{self, Read};
+use std::io::{self, BufRead};
 use std::convert::TryInto;
 
 fn sha256(data: &[u8]) -> String {
@@ -49,20 +49,21 @@ fn sha256(data: &[u8]) -> String {
     h.iter().map(|v| format!("{:08x}", v)).collect()
 }
 
-fn merkle_root(txs: &[&str]) -> String {
-    if txs.is_empty() { return sha256(b""); }
-    let mut level: Vec<String> = txs.iter().map(|t| sha256(t.as_bytes())).collect();
-    while level.len() > 1 {
-        if level.len() % 2 == 1 { let last = level.last().unwrap().clone(); level.push(last); }
-        level = level.chunks(2).map(|p| sha256((p[0].clone() + &p[1]).as_bytes())).collect();
-    }
-    level.remove(0)
-}
-
 fn main() {
-    let mut input = String::new();
-    io::stdin().read_to_string(&mut input).unwrap();
-    let line = input.trim();
-    let txs: Vec<&str> = if line.is_empty() { vec![] } else { line.split(',').collect() };
-    println!("{}", merkle_root(&txs));
+    let stdin = io::stdin();
+    for line in stdin.lock().lines() {
+        let l = line.unwrap();
+        if l.is_empty() { continue; }
+        let mut parts = l.splitn(3, '|');
+        let tx   = parts.next().unwrap();
+        let root = parts.next().unwrap();
+        let sibs = parts.next().unwrap();
+
+        let mut h = sha256(tx.as_bytes());
+        for sib in sibs.split(',') {
+            let (a, b) = if h.as_str() < sib { (h.as_str(), sib) } else { (sib, h.as_str()) };
+            h = sha256(format!("{}{}", a, b).as_bytes());
+        }
+        println!("{}", if h == root { "VALID" } else { "INVALID" });
+    }
 }
