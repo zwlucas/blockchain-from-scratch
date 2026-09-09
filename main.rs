@@ -1,7 +1,7 @@
-use std::io::{self, BufRead};
+use std::io::{self, Read};
 use std::convert::TryInto;
 
-fn sha256(data: &[u8]) -> [u8; 32] {
+fn sha256(data: &[u8]) -> String {
     let k: [u32; 64] = [
         0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
         0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
@@ -15,13 +15,11 @@ fn sha256(data: &[u8]) -> [u8; 32] {
     let mut h: [u32; 8] = [
         0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19,
     ];
-
     let bit_len = (data.len() as u64) * 8;
     let mut msg = data.to_vec();
     msg.push(0x80);
     while msg.len() % 64 != 56 { msg.push(0); }
     msg.extend_from_slice(&bit_len.to_be_bytes());
-
     for chunk in msg.chunks(64) {
         let mut w = [0u32; 64];
         for i in 0..16 {
@@ -48,20 +46,40 @@ fn sha256(data: &[u8]) -> [u8; 32] {
         h[4]=h[4].wrapping_add(e); h[5]=h[5].wrapping_add(f);
         h[6]=h[6].wrapping_add(g); h[7]=h[7].wrapping_add(hh);
     }
-
-    let mut out = [0u8; 32];
-    for (i, &v) in h.iter().enumerate() {
-        out[i*4..i*4+4].copy_from_slice(&v.to_be_bytes());
-    }
-    out
+    h.iter().map(|v| format!("{:08x}", v)).collect()
 }
 
 fn main() {
-    let stdin = io::stdin();
-    for line in stdin.lock().lines() {
-        let l = line.unwrap();
-        if l.is_empty() { continue; }
-        let hash = sha256(l.as_bytes());
-        println!("{}", hash.iter().map(|b| format!("{:02x}", b)).collect::<String>());
+    let mut input = String::new();
+    io::stdin().read_to_string(&mut input).unwrap();
+
+    let blocks: Vec<(&str, &str, &str, &str)> = input.lines()
+        .filter(|l| !l.is_empty())
+        .map(|l| {
+            let mut it = l.splitn(4, ' ');
+            let idx  = it.next().unwrap();
+            let prev = it.next().unwrap();
+            let data = it.next().unwrap();
+            let hash = it.next().unwrap();
+            (idx, prev, data, hash)
+        })
+        .collect();
+
+    const ZEROS: &str = "0000000000000000000000000000000000000000000000000000000000000000";
+    let mut prev_hash = ZEROS;
+
+    for (i, &(idx, prev, data, stored)) in blocks.iter().enumerate() {
+        let preimage = format!("{}|{}|{}", idx, prev, data);
+        if sha256(preimage.as_bytes()) != stored {
+            println!("INVALID block {}", i);
+            return;
+        }
+        
+        if prev != prev_hash {
+            println!("INVALID block {}", i);
+            return;
+        }
+        prev_hash = stored;
     }
+    println!("VALID");
 }
