@@ -1,0 +1,6 @@
+PEER a b
+ANNOUNCE a x
+ANNOUNCE b y
+TICK
+KNOWN a
+KNOWN b

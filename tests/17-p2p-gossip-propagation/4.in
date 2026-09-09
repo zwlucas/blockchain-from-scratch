@@ -1,0 +1,8 @@
+PEER a b
+PEER c d
+ANNOUNCE a tx
+TICK
+TICK
+TICK
+REACHED tx
+EARLIEST d tx

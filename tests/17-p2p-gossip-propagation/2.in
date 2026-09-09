@@ -1,0 +1,9 @@
+PEER a b
+PEER a c
+PEER a d
+ANNOUNCE a item
+TICK
+KNOWN b
+KNOWN c
+KNOWN d
+REACHED item

@@ -1,0 +1,2 @@
+MINT u1 50 alice
+TX u1:bob -> u2:50:carol

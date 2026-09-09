@@ -1,0 +1,5 @@
+MINT a 30 alice
+MINT b 20 alice
+TX a:alice,b:alice -> c:45:bob
+BALANCE alice
+BALANCE bob

@@ -1,0 +1,4 @@
+MINT u1 100 alice
+TX u1:alice -> u2:30:bob,u3:65:alice
+BALANCE alice
+BALANCE bob

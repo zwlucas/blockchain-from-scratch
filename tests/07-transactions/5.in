@@ -1,0 +1,6 @@
+MINT cb 100 miner
+TX cb:miner -> p1:60:alice,p2:35:miner
+TX p1:alice -> x:40:bob,y:15:alice
+BALANCE bob
+BALANCE alice
+BALANCE miner
