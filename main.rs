@@ -62,6 +62,6 @@ fn main() {
         let l = line.unwrap();
         if l.is_empty() { continue; }
         let hash = sha256(l.as_bytes());
-        println!("{}", hash.iter().map(|b| format!("{b:02x}")).collect::<String>());
+        println!("{}", hash.iter().map(|b| format!("{:02x}", b)).collect::<String>());
     }
 }
