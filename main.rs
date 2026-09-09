@@ -80,9 +80,7 @@ fn main() {
 
         let mut digest = sha256_bytes(&sha256_bytes(&header));
         digest.reverse();
-        for b in digest {
-            print!("{:02x}", b);
-        }
+        for b in &digest { print!("{:02x}", b); }
         println!();
     }
 }
